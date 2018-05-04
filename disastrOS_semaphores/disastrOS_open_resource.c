@@ -43,7 +43,7 @@ void internal_openResource(){
   //5 create the descriptor for the resource in this process, and add it to
   //  the process descriptor list. Assign to the resource a new fd
   Descriptor* des=Descriptor_alloc(running->last_fd, res, running);
-  if (! des){
+  if (! res){
      running->syscall_retvalue=DSOS_ERESOURCENOFD;
      return;
   }
