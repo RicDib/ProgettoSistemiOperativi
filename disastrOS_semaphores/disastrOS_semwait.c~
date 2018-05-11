@@ -34,11 +34,9 @@ void internal_semWait(){
 		running->status = Waiting;
 	}
 
-	running->syscall_retvalue = 0; 
-  //if everything is ok we return 0
+	running->syscall_retvalue=0;
 	return;
-
-}
+  //if everything is ok we return 0
 
 
 
