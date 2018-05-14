@@ -5,7 +5,10 @@
 #include "disastrOS_syscalls.h"
 #include "disastrOS_semaphore.h"
 #include "disastrOS_semdescriptor.h"
+#include "disastrOS_constants.h"
+#include "disastrOS_globals.h"
 #include "linked_list.h"
+
 
 void internal_semWait(){
   // step 1 - we take from syscall_args the semaphore
