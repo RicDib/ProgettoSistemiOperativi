@@ -29,10 +29,6 @@ void internal_semClose(){
     List_detach(&running->sem_descriptors, (ListItem*)sem_desc));
 
     Semaphore* sem = sem_desc->semaphore;
-    if(!sem){
-	running->return_value=DSOS_ESEMAPHORENOAVAILABLE;
-        return;
-    }
 
     //the pointer to the semaphore descriptor is removed and the error is handled
     SemDescriptorPtr* semDescPtr = (SemDescriptorPtr*)List_detach(&(sem->descriptors), (ListItem*)(sem_desc->ptr));
