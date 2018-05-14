@@ -25,7 +25,7 @@ if(!sem){
     List_insert(&semaphores_list, semaphores_list.last, (ListItem*) sem);
 }
 
-// step 3 - create the descriptor for the resource in this process, and add it to the process descriptor list. Assign to the resource a new fd
+// step 3 - create the descriptor for the semaphore in this process, and add it to the process descriptor list. Assign to the resource a new fd
 
 SemDescriptor* desc = SemDescriptor_alloc(running->last_sem_fd, sem, running);
 if (!desc){
