@@ -35,7 +35,7 @@ void internal_semPost(){
         //we insert the running process in the ready list
         List_insert(&ready_list, ready_list.last, (ListItem*)running);
 
-        //we save in sem_des_ptr the first element in sem->waiting_descriptors
+        //we save in sem_des_ptr the first process in sem->waiting_descriptors
         SemDescriptorPtr* sem_des_ptr = (SemDescriptorPtr*) List_detach(&(sem->waiting_descriptors), sem->waiting_descriptors.first);
 
 
