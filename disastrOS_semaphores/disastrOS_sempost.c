@@ -36,14 +36,19 @@ void internal_semPost(){
         List_insert(&ready_list, ready_list.last, (ListItem*)running);
 
         //we save in sem_des_ptr the first process in sem->waiting_descriptors
-        SemDescriptorPtr* sem_des_ptr = (SemDescriptorPtr*) List_detach(&(sem->waiting_descriptors), sem->waiting_descriptors.first);
+        SemDescriptorPtr* sem_des_ptr = (SemDescriptorPtr*) List_detach(&(sem->waiting_descriptors),(ListItem*) sem->waiting_descriptors.first);
 
+        //saving process' pcb
+        PCB* proc_pcb = sem_des_ptr->descriptor->pcb;
 
+        //removing process' pcb from waiting list
+        List_detach(&waiting_list, (ListItem*)proc_pcb);
 
-        List_detach(&(sem->waiting_descriptors),(ListItem*)sem_des_ptr);
-        List_insert(&running_list, (ListItem*) waiting);
+        //insertion in ready list
+        List_insert(&ready_list, (ListItem*)ready_list.last, (ListItem*)proc_pcb);
 
         running->status = Running;
+
     }
     running->syscall_retvalue = 0;
     //if everything is ok we return 0
