@@ -13,6 +13,7 @@
 #include "disastrOS_descriptor.h"
 #include "disastrOS_semaphore.h"
 #include "disastrOS_semdescriptor.h"
+#include "disastrOS_constants.h"
 
 FILE* log_file=NULL;
 PCB* init_pcb;
@@ -146,6 +147,8 @@ void disastrOS_start(void (*f)(void*), void* f_args, char* logfile){
   Timer_init();
   Resource_init();
   Descriptor_init();
+  Semaphore_init(); //aggiunta per gestire i semafori
+  SemDescriptor_init(); // aggiunta per gestire i descrittori dei semafori
   init_pcb=0;
 
   // populate the vector of syscalls and number of arguments for each syscall
@@ -184,13 +187,13 @@ void disastrOS_start(void (*f)(void*), void* f_args, char* logfile){
 
   // fill these with the syscall handlers
   syscall_vector[DSOS_CALL_SEMOPEN]      = internal_semOpen;
-  syscall_numarg[DSOS_CALL_SEMOPEN]      = 1;
+  syscall_numarg[DSOS_CALL_SEMOPEN]      = 2;  //cambiato numero di parametri da passare alla sem_open da 1 a 2
 
   syscall_vector[DSOS_CALL_SEMCLOSE]      = internal_semClose;
   syscall_numarg[DSOS_CALL_SEMCLOSE]      = 1;
 
   syscall_vector[DSOS_CALL_SEMPOST]      = internal_semPost;
-  syscall_numarg[DSOS_CALL_SEMPOST]      = 2;
+  syscall_numarg[DSOS_CALL_SEMPOST]      = 1; //cambiato numero di parametri da passare alla sem_open da 2 a 1
 
   syscall_vector[DSOS_CALL_SEMWAIT]      = internal_semWait;
   syscall_numarg[DSOS_CALL_SEMWAIT]      = 1;
@@ -327,3 +330,23 @@ void disastrOS_printStatus(){
   PCBList_print(&zombie_list);
   printf("\n***********************************************\n\n");
 };
+
+//implementation of semaphores' functions to using syscalls whose number is into syscall's table (in disastrOS_constants.h)
+//in every function we recall disastros_syscall which recalls functions relatives to arguments' number
+
+int distastrOS_semOpen(int sem_id, int count){
+    return distastrOS_syscall(DSOS_CALL_SEMOPEN, sem_id, count);
+}
+
+int distastrOS_semClose(int sem_fd){
+    return distastrOS_syscall(DSOS_CALL_SEMCLOSE, sem_fd);
+}
+
+int distastrOS_semPost(int sem_fd){
+    return distastrOS_syscall(DSOS_CALL_SEMPOST, sem_fd);
+}
+
+int distastrOS_semWait(int sem_fd){
+    return distastrOS_syscall(DSOS_CALL_SEMWAIT, sem_fd);
+}
+
