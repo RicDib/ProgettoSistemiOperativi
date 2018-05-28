@@ -334,19 +334,19 @@ void disastrOS_printStatus(){
 //implementation of semaphores' functions to using syscalls whose number is into syscall's table (in disastrOS_constants.h)
 //in every function we recall disastros_syscall which recalls functions associated to arguments' number
 
-int distastrOS_semOpen(int sem_id, int count){
+int disastrOS_semOpen(int sem_id, int count){
     return disastrOS_syscall(DSOS_CALL_SEMOPEN, sem_id, count);
 }
 
-int distastrOS_semClose(int sem_fd){
+int disastrOS_semClose(int sem_fd){
     return disastrOS_syscall(DSOS_CALL_SEMCLOSE, sem_fd);
 }
 
-int distastrOS_semPost(int sem_fd){
+int disastrOS_semPost(int sem_fd){
     return disastrOS_syscall(DSOS_CALL_SEMPOST, sem_fd);
 }
 
-int distastrOS_semWait(int sem_fd){
+int disastrOS_semWait(int sem_fd){
     return disastrOS_syscall(DSOS_CALL_SEMWAIT, sem_fd);
 }
 
