@@ -26,7 +26,7 @@ void internal_semClose(){
 
     //step 3 - the semaphore descriptor is removed from the running process list
 
-    List_detach(&running->sem_descriptors, (ListItem*)sem_desc));
+    List_detach(&running->sem_descriptors, (ListItem*)sem_desc);
 
     Semaphore* sem = sem_desc->semaphore;
     if(!sem){

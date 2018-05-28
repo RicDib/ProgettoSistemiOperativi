@@ -9,7 +9,7 @@
 void internal_semPost(){
 
     int sem_fd = running->syscall_args[0];
-    SemDescritpor* sem_des = SemDescriptorList_byFd(&running->sem_descriptors, sem_fd);
+    SemDescriptor* sem_des = SemDescriptorList_byFd(&running->sem_descriptors, sem_fd);
 
     //checking the presence of sem_des in the list
     if(!sem_des){
@@ -18,11 +18,11 @@ void internal_semPost(){
 	}
 
      //we save in sem the semaphore associated to the relative descriptor
-     Sempahore* sem = sem_des->semaphore;
+     Semaphore* sem = sem_des->semaphore;
 
     //checking errors in saving the sem
      if(!sem){
-		running->syscall_retvalue= DSOS_ESEMAPHORENOTAVAILABLE;
+		running->syscall_retvalue= DSOS_ESEMAPHORENOAVAILABLE;
 		return;
 	 }
 
@@ -30,7 +30,7 @@ void internal_semPost(){
     sem->count = (sem->count)+1;
 
     //sem_count after incrementation will take a different value, so we check if it's <= 0
-    if (sem_count <= 0){
+    if (sem->count <= 0){
 
         //we insert the running process in the ready list
         List_insert(&ready_list, ready_list.last, (ListItem*)running);

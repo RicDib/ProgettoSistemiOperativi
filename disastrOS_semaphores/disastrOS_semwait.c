@@ -21,10 +21,10 @@ void internal_semWait(){
 		return;
 	}
   // we save the sempahore associated with the specified semaphore descriptor
-	Sempahore* sem = sem_des->semaphore;
+	Semaphore* sem = sem_des->semaphore;
   // error handler. it returns error if the semaphore it's not found
 	if(!sem){
-		running->syscall_retvalue= DSOS_ESEMAPHORENOTAVAILABLE;
+		running->syscall_retvalue= DSOS_ESEMAPHORENOAVAILABLE;
 		return;
 	}
 
@@ -62,4 +62,4 @@ void internal_semWait(){
 
 
 
-}
+
