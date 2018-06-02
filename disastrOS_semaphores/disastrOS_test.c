@@ -21,10 +21,23 @@ void childFunction(void* args){
   int fd=disastrOS_openResource(disastrOS_getpid(),type,mode);
   printf("fd=%d\n", fd);
 
+    //
+  disastrOS_printStatus();
+    //
+
   int fd1=disastrOS_semOpen(disastrOS_getpid(),1);
+
+    //
+  disastrOS_printStatus();
+    //
+
   printf("ho fatto una sem_open");
   printf("fd1=%d\n",fd1);
   disastrOS_semClose(fd1);
+
+    //
+  disastrOS_printStatus();
+    //
 
   printf("PID: %d, terminating\n", disastrOS_getpid());
 
@@ -40,11 +53,11 @@ void initFunction(void* args) {
   disastrOS_printStatus();
   printf("hello, I am init and I just started\n");
   disastrOS_spawn(sleeperFunction, 0);
-  
+
 
   printf("I feel like to spawn 10 nice threads\n");
   int alive_children=0;
-  for (int i=0; i<10; ++i) {
+  for (int i=0; i<3; ++i) { //modificato indice
     int type=0;
     int mode=DSOS_CREATE;
     printf("mode: %d\n", mode);
@@ -58,7 +71,7 @@ void initFunction(void* args) {
   disastrOS_printStatus();
   int retval;
   int pid;
-  while(alive_children>0 && (pid=disastrOS_wait(0, &retval))>=0){ 
+  while(alive_children>0 && (pid=disastrOS_wait(0, &retval))>=0){
     disastrOS_printStatus();
     printf("initFunction, child: %d terminated, retval:%d, alive: %d \n",
 	   pid, retval, alive_children);
