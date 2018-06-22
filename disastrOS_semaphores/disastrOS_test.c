@@ -27,13 +27,34 @@ void childFunction(void* args){
 
   int fd1=disastrOS_semOpen(disastrOS_getpid(),1);
 
+
+
+  printf("ho fatto una sem_open");
+  printf("fd1=%d\n",fd1);
+
+
     //
   disastrOS_printStatus();
     //
 
-  printf("ho fatto una sem_open");
+
+
+    //
+
+  disastrOS_semWait(fd1);
+
+  printf("ho fatto una sem_wait\n");
   printf("fd1=%d\n",fd1);
+
+  disastrOS_printStatus();
+
+  //
+
+
   disastrOS_semClose(fd1);
+
+  printf("ho fatto una sem_close\n");
+  printf("fd1=%d\n",fd1);
 
     //
   disastrOS_printStatus();
