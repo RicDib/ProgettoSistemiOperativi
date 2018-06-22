@@ -1,12 +1,45 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <poll.h>
-
 #include "disastrOS.h"
+#include "disastrOS_constants.h"
 
+#define CICLES 5
+#define NUMPRODUCER 2
+
+void produce(int prod_id,int cons_id){
+    for (int i = 0; i < CICLES; i++){
+
+
+        disastrOS_semWait(prod_id);
+
+        //disastrOS_printStatus();/////////////////
+
+        printf("PRODUCED\n");
+        disastrOS_semPost(cons_id);
+
+        //disastrOS_printStatus();/////////////////
+    }
+}
+
+void consume(int prod_id,int cons_id){
+    for (int i = 0; i < CICLES; i++){
+
+
+        disastrOS_semWait(cons_id);
+
+        //disastrOS_printStatus();/////////////////
+
+        printf("CONSUMED\n");
+        disastrOS_semPost(prod_id);
+
+        //disastrOS_printStatus();/////////////////
+
+    }
+}
 // we need this to handle the sleep state
 void sleeperFunction(void* args){
-  printf("Hello, I am the sleeper, and I sleep %d\n",disastrOS_getpid());
+  printf("Hello, I am the sleeper, and I sleep %d\n", disastrOS_getpid());
   while(1) {
     getc(stdin);
     disastrOS_printStatus();
@@ -14,58 +47,37 @@ void sleeperFunction(void* args){
 }
 
 void childFunction(void* args){
-  printf("Hello, I am the child function %d\n",disastrOS_getpid());
+  printf("Hello, I am the child function %d\n", disastrOS_getpid());
   printf("I will iterate a bit, before terminating\n");
   int type=0;
   int mode=0;
-  int fd=disastrOS_openResource(disastrOS_getpid(),type,mode);
+  int fd=disastrOS_openResource(disastrOS_getpid(), type, mode);
   printf("fd=%d\n", fd);
 
-    //
-  disastrOS_printStatus();
-    //
+  printf("Opening the semaphores...\n");
 
-  int fd1=disastrOS_semOpen(disastrOS_getpid(),1);
+  int prod_id = disastrOS_semOpen(1,NUMPRODUCER);
 
+  int cons_id = disastrOS_semOpen(2,0);
 
-
-  printf("ho fatto una sem_open");
-  printf("fd1=%d\n",fd1);
+  printf("********WAITING SOME SECS BEFORE PRODUCING********\n");
+  disastrOS_sleep(20);
 
 
-    //
-  disastrOS_printStatus();
-    //
+  if (disastrOS_getpid() == 3) {
+      printf("********PROCESS N 3 WILL PRODUCE AND PROCESS N 4 WILL CONSUME********\n");
+      produce(prod_id, cons_id);
+  }
 
-
-
-    //
-
-  disastrOS_semWait(fd1);
-
-  printf("ho fatto una sem_wait\n");
-  printf("fd1=%d\n",fd1);
-
-  disastrOS_printStatus();
-
-  //
-
-
-  disastrOS_semClose(fd1);
-
-  printf("ho fatto una sem_close\n");
-  printf("fd1=%d\n",fd1);
-
-    //
-  disastrOS_printStatus();
-    //
-
+  if (disastrOS_getpid() == 4){
+      consume(prod_id, cons_id);
+  }
   printf("PID: %d, terminating\n", disastrOS_getpid());
 
-  for (int i=0; i<(disastrOS_getpid()+1); ++i){
-    printf("PID: %d, iterate %d\n", disastrOS_getpid(), i);
-    disastrOS_sleep((20-disastrOS_getpid())*5);
-  }
+
+  printf("********CLOSING SEMAPHORES********\n");
+  disastrOS_semClose(prod_id);
+  disastrOS_semClose(cons_id);
   disastrOS_exit(disastrOS_getpid()+1);
 }
 
@@ -74,11 +86,10 @@ void initFunction(void* args) {
   disastrOS_printStatus();
   printf("hello, I am init and I just started\n");
   disastrOS_spawn(sleeperFunction, 0);
-
-
   printf("I feel like to spawn 10 nice threads\n");
   int alive_children=0;
-  for (int i=0; i<3; ++i) { //modificato indice
+
+  for (int i=0; i<3; ++i) {
     int type=0;
     int mode=DSOS_CREATE;
     printf("mode: %d\n", mode);
@@ -93,11 +104,12 @@ void initFunction(void* args) {
   int retval;
   int pid;
   while(alive_children>0 && (pid=disastrOS_wait(0, &retval))>=0){
-    disastrOS_printStatus();
-    printf("initFunction, child: %d terminated, retval:%d, alive: %d \n",
-	   pid, retval, alive_children);
+   // disastrOS_printStatus();
+    //printf("initFunction, child: %d terminated, retval:%d, alive: %d \n",
+	  // pid, retval, alive_children);
     --alive_children;
   }
+  disastrOS_printStatus();
   printf("shutdown!");
   disastrOS_shutdown();
 }
@@ -116,3 +128,4 @@ int main(int argc, char** argv){
   disastrOS_start(initFunction, 0, logfilename);
   return 0;
 }
+
