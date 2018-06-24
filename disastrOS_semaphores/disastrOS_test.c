@@ -10,30 +10,39 @@
 void produce(int prod_id,int cons_id){
     for (int i = 0; i < CICLES; i++){
 
-
+        printf("*   prima wait prod\n");
         disastrOS_semWait(prod_id);
+        printf("*   dopo wait prod\n");
 
-        //disastrOS_printStatus();/////////////////
 
+        printf("---------------------\n");
         printf("PRODUCED\n");
-        disastrOS_semPost(cons_id);
+        printf("---------------------\n");
 
-        //disastrOS_printStatus();/////////////////
+        printf("*   prima post prod\n");
+        disastrOS_semPost(cons_id);
+        printf("*   dopo post prod\n");
+        printf("-:-:-:-:-:-:-:-:-:-:-:\n");
+
     }
 }
 
 void consume(int prod_id,int cons_id){
     for (int i = 0; i < CICLES; i++){
 
-
+        printf("*   prima wait cons\n");
         disastrOS_semWait(cons_id);
+        printf("*   dopo wait cons\n");
 
-        //disastrOS_printStatus();/////////////////
-
+        printf("---------------------\n");
         printf("CONSUMED\n");
-        disastrOS_semPost(prod_id);
+        printf("---------------------\n");
 
-        //disastrOS_printStatus();/////////////////
+        printf("*   prima post cons\n");
+        disastrOS_semPost(prod_id);
+        printf("*   dopo post cons\n");
+        printf("-:-:-:-:-:-:-:-:-:-:-:\n");
+
 
     }
 }
@@ -64,16 +73,38 @@ void childFunction(void* args){
   disastrOS_sleep(20);
 
 
+
+
   if (disastrOS_getpid() == 3) {
       printf("********PROCESS N 3 WILL PRODUCE AND PROCESS N 4 WILL CONSUME********\n");
+
+
+      printf("sono entrato nell'if del proc 3 e quindi si presume che debba PRODURRE\n");
+
       produce(prod_id, cons_id);
+
+
   }
+
+
+
+
 
   if (disastrOS_getpid() == 4){
-      consume(prod_id, cons_id);
-  }
-  printf("PID: %d, terminating\n", disastrOS_getpid());
 
+
+
+      printf("sono entrato nell'if del proc 4 e quindi si presume che debba CONSUMARE\n");
+
+      consume(prod_id, cons_id);
+
+
+  }
+
+
+
+
+  printf("PID: %d, terminating\n", disastrOS_getpid());
 
   printf("********CLOSING SEMAPHORES********\n");
   disastrOS_semClose(prod_id);
@@ -110,7 +141,7 @@ void initFunction(void* args) {
     --alive_children;
   }
   disastrOS_printStatus();
-  printf("shutdown!");
+  printf("shutdown!\n");
   disastrOS_shutdown();
 }
 
