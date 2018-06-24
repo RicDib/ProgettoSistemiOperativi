@@ -3,49 +3,45 @@
 #include <poll.h>
 #include "disastrOS.h"
 #include "disastrOS_constants.h"
-
 #define CICLES 5
-#define NUMPRODUCER 2
+#define RESOURCES 2
 
 void produce(int prod_id,int cons_id){
     for (int i = 0; i < CICLES; i++){
 
-        printf("*   prima wait prod\n");
+
         disastrOS_semWait(prod_id);
-        printf("*   dopo wait prod\n");
+
+        printf("      *   process is in the c.s. and it's ready to produce\n");
 
 
-        printf("---------------------\n");
-        printf("PRODUCED\n");
-        printf("---------------------\n");
+        printf("---------------------------------------------------------------------\n");
+        printf("                      PRODUCING RESOURCE\n");
+        printf("---------------------------------------------------------------------\n");
 
-        printf("*   prima post prod\n");
+
         disastrOS_semPost(cons_id);
-        printf("*   dopo post prod\n");
-        printf("-:-:-:-:-:-:-:-:-:-:-:\n");
-
     }
 }
 
 void consume(int prod_id,int cons_id){
     for (int i = 0; i < CICLES; i++){
 
-        printf("*   prima wait cons\n");
+
         disastrOS_semWait(cons_id);
-        printf("*   dopo wait cons\n");
+        printf("      *   process is in the c.s. and it's ready to consume\n");
 
-        printf("---------------------\n");
-        printf("CONSUMED\n");
-        printf("---------------------\n");
+        printf("---------------------------------------------------------------------\n");
+        printf("                      CONSUMING RESOURCE\n");
+        printf("---------------------------------------------------------------------\n");
 
-        printf("*   prima post cons\n");
         disastrOS_semPost(prod_id);
-        printf("*   dopo post cons\n");
-        printf("-:-:-:-:-:-:-:-:-:-:-:\n");
-
-
     }
 }
+
+
+
+
 // we need this to handle the sleep state
 void sleeperFunction(void* args){
   printf("Hello, I am the sleeper, and I sleep %d\n", disastrOS_getpid());
@@ -54,6 +50,9 @@ void sleeperFunction(void* args){
     disastrOS_printStatus();
   }
 }
+
+
+
 
 void childFunction(void* args){
   printf("Hello, I am the child function %d\n", disastrOS_getpid());
@@ -65,21 +64,24 @@ void childFunction(void* args){
 
   printf("Opening the semaphores...\n");
 
-  int prod_id = disastrOS_semOpen(1,NUMPRODUCER);
+  int prod_id = disastrOS_semOpen(1,RESOURCES);
 
   int cons_id = disastrOS_semOpen(2,0);
 
-  printf("********WAITING SOME SECS BEFORE PRODUCING********\n");
-  disastrOS_sleep(20);
+  printf("                                    \n\nWait...\n\n\n");
+  disastrOS_sleep(15);
+  printf("      THE 3rd PROCESS PRODUCES THE RESOURCE, THE 4th CONSUMES IT\n");
+
 
 
 
 
   if (disastrOS_getpid() == 3) {
-      printf("********PROCESS N 3 WILL PRODUCE AND PROCESS N 4 WILL CONSUME********\n");
 
 
-      printf("sono entrato nell'if del proc 3 e quindi si presume che debba PRODURRE\n");
+
+      printf("\n      I'm the 3rd process, I begin to PRODUCE\n\n");
+
 
       produce(prod_id, cons_id);
 
@@ -92,13 +94,8 @@ void childFunction(void* args){
 
   if (disastrOS_getpid() == 4){
 
-
-
-      printf("sono entrato nell'if del proc 4 e quindi si presume che debba CONSUMARE\n");
-
+      printf("\n      I'm the 4th process, I begin to CONSUME\n\n");
       consume(prod_id, cons_id);
-
-
   }
 
 
@@ -106,7 +103,7 @@ void childFunction(void* args){
 
   printf("PID: %d, terminating\n", disastrOS_getpid());
 
-  printf("********CLOSING SEMAPHORES********\n");
+  //printf("********CLOSING SEMAPHORES********\n");
   disastrOS_semClose(prod_id);
   disastrOS_semClose(cons_id);
   disastrOS_exit(disastrOS_getpid()+1);
