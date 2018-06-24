@@ -31,20 +31,20 @@ void internal_semPost(){
 
     //sem_count after incrementation will take a different value, so we check if it's <= 0
     if (sem->count <= 0){
-
-        //we insert the running process in the ready list
-        List_insert(&ready_list, ready_list.last, (ListItem*)running);
-
-        //we save in sem_des_ptr the first process in sem->waiting_descriptors
+	
+	//we save in sem_des_ptr the first process in sem->waiting_descriptors
         SemDescriptorPtr* sem_des_ptr = (SemDescriptorPtr*) List_detach(&(sem->waiting_descriptors),(ListItem*) sem->waiting_descriptors.first);
 
-	List_insert(&sem->descriptors, sem->descriptors.last, (ListItem*) sem_des_ptr);
-
-        //removing process' pcb from waiting list
+	//removing process' pcb from waiting list
         List_detach(&waiting_list, (ListItem*)sem_des_ptr->descriptor->pcb);
 
-        running->status = Ready;
-	running = sem_des_ptr->descriptor->pcb;
+        //we insert this process in the ready list
+        List_insert(&ready_list, ready_list.last, (ListItem*)sem_des_ptr->descriptor->pcb);
+        
+	List_insert(&sem->descriptors, sem->descriptors.last, (ListItem*) sem_des_ptr);
+        
+
+        sem_des_ptr->descriptor->pcb->status = Ready;
 
 
     }
