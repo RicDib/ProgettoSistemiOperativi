@@ -35,7 +35,7 @@ void FixedSizeMessageQueue_pushBack(FixedSizeMessageQueue*q,
   disastrOS_semPost(q->sem_full);
 }
 
-char* FixedSizeMessageQueue_popFront(FixedSizeMessageQueue*q){
+char* FixedSizeMessageQueue_popFront(FixedSizeMessageQueue* q){
   char* message_out=0;
   disastrOS_semWait(q->sem_full);
   disastrOS_semWait(q->sem_c);
