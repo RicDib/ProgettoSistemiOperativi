@@ -1,0 +1,29 @@
+#pragma once
+#include <pthread.h>
+#include <semaphore.h>
+
+typedef struct FixedSizeMessageQueue{
+  char** messages;
+  int size;
+  int size_max;
+  int front_idx;
+  int sem_full;
+  int sem_empty;
+  int sem_p;
+  int sem_c;
+  pthread_mutex_t mutex;
+} FixedSizeMessageQueue;
+
+void FixedSizeMessageQueue_init(FixedSizeMessageQueue* q,
+				int size_max);
+
+void FixedSizeMessageQueue_destroy(FixedSizeMessageQueue* q);
+
+void FixedSizeMessageQueue_pushBack(FixedSizeMessageQueue*q,
+				    char* message);
+
+char* FixedSizeMessageQueue_popFront(FixedSizeMessageQueue*q);
+
+int FixedSizeMessageQueue_sizeMax(FixedSizeMessageQueue* q);
+
+int FixedSizeMessageQueue_size(FixedSizeMessageQueue* q);

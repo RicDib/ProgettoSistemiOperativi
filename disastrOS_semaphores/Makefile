@@ -1,5 +1,5 @@
 CC=gcc
-CCOPTS=--std=gnu99 -Wall 
+CCOPTS=--std=gnu99 -Wall
 AR=ar
 
 HEADERS=disastrOS.h\
@@ -14,6 +14,7 @@ HEADERS=disastrOS.h\
 	disastrOS_semdescriptor.h\
 	linked_list.h\
 	pool_allocator.h\
+	fixed_size_message_queue.h\
 
 OBJS=pool_allocator.o\
      linked_list.o\
@@ -38,12 +39,13 @@ OBJS=pool_allocator.o\
      disastrOS_semopen.o\
      disastrOS_semclose.o\
      disastrOS_semwait.o\
+     fixed_size_message_queue.o\
      disastrOS_sempost.o
 
 
 LIBS=libdisastrOS.a
 
-BINS=disastrOS_test
+BINS=disastrOS_test fixed_size_message_queue_test
 
 #disastros_test
 
@@ -55,11 +57,14 @@ all:	$(LIBS) $(BINS)
 %.o:	%.c $(HEADERS)
 	$(CC) $(CCOPTS) -c -o $@  $<
 
-libdisastrOS.a: $(OBJS) $(HEADERS) 
+libdisastrOS.a: $(OBJS) $(HEADERS)
 	$(AR) -rcs $@ $^
 	$(RM) $(OBJS)
 
 disastrOS_test:		disastrOS_test.c $(LIBS)
+	$(CC) $(CCOPTS) -o $@ $^
+
+fixed_size_message_queue_test:	fixed_size_message_queue_test.c $(LIBS)
 	$(CC) $(CCOPTS) -o $@ $^
 
 clean:
