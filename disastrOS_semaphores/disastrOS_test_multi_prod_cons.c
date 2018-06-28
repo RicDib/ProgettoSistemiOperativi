@@ -65,8 +65,9 @@ void prodFunction(void* args){
 
         op[write_index] = running->pid;                       //produco il "token"
         write_index = (write_index + 1) % BUFFER_SIZE;
-        printf("PRODUCED\n");
-
+        printf("--------------------------------------------------------------------------\n");
+        printf("                                    PRODUCED\n");
+        printf("--------------------------------------------------------------------------\n");
         ret = disastrOS_semPost(sem_prod);                              //comunico agli altri sem. Produttori che ho finito
         MESSAGE_ERROR(ret != 0, "Errore nella semPost di sem_prod del processo ");
 
@@ -115,7 +116,9 @@ void consFunction(void* args){
         int new_op = op[read_index];
         read_index = (read_index + 1) % BUFFER_SIZE;
         sum += new_op;
-        printf("CONSUMED\n");
+        printf("--------------------------------------------------------------------------\n");
+        printf("                                    CONSUMED\n");
+        printf("--------------------------------------------------------------------------\n");
        /* if (read_index % N == 0) {
             printf("La somma totale delle operazioni è: %d.\n", sum);
         }*/
