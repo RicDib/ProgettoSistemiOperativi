@@ -1,217 +1,203 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <poll.h>
-
 #include "disastrOS.h"
 #include "disastrOS_semaphore.h"
+#include "disastrOS_globals.h"
+#include <errno.h>
+#include <string.h>
 
-#define ERROR_HANDLER(ret, msg) \
-  do {\
-    if (ret < 0) { \
-      fprintf(stderr, "[!](%d) %s\n", ret, msg); \
-      disastrOS_exit(1); \
-    }\
-  } while(0);
+#define MESSAGE_ERROR(cond, msg) do {                   \
+        if (cond) {                                     \
+            printf("%s: %d \n", msg,running->pid);      \
+            disastrOS_exit(disastrOS_getpid()+1);       \
+        }                                               \
+    } while(0)
 
-#define PRODUCERS_NUM 1
-#define CONSUMERS_NUM 1
-#define EMPTY_SEM_ID 0
-#define FILL_SEM_ID 1
-#define PRODUCERS_SEM_ID 2
-#define CONSUMERS_SEM_ID 3
-#define BUFFER_SIZE 8
-#define TRANSACTIONS_NUMBER 5
+#define SEM_EMPTY 0
+#define SEM_FILL 1
+#define SEM_PROD 2
+#define SEM_CONS 3
+#define BUFFER_SIZE 4
+#define CYCLES 10
+#define N 8
 
-typedef struct Child_Args_s {
-  int sem_id;
-  int number;
-} Child_Args_t;
+int read_index,write_index, sum;                                    //indici di lettura, scrittura e somma dei "token" prodotti nelle operazioni
+int op[BUFFER_SIZE];
 
-int transactions[BUFFER_SIZE];  // circular buffer
-int read_index;     // index of the next slot containing information to be read
-int write_index;    // index of the next available slot for writing
-int empty_sem;
-int fill_sem;
-int consumers_sem;
-int producers_sem;
-int deposit;
+void initFunction(void* args);
+void prodFunction(void* args);
+void consFunction(void* args);
 
-/** Producer **/
-void producerJob(int producer_no) {
-  printf("[*]@Producer #%d\n", producer_no);
-  int ret;
-
-  //int empty_sem = disastrOS_semOpen(EMPTY_SEM_ID, 0);
-  //ERROR_HANDLER(empty_sem, "Error opening empty_sem in producerJob");
-  //int producers_sem = disastrOS_semOpen(PRODUCERS_SEM_ID, 0);
-  //ERROR_HANDLER(producers_sem, "Error opening producers_sem in producerJob");
-  int i = 0;
-  while (i < TRANSACTIONS_NUMBER) {
-      // produce the item
-      int currentTransaction = 1;
-
-      ret = disastrOS_semWait(empty_sem);
-      ERROR_HANDLER(ret, "Error waiting empty_sem in producerJob");
-
-      ret = disastrOS_semWait(producers_sem);
-      ERROR_HANDLER(ret, "Error waiting producers_sem in producerJob");
-
-      transactions[write_index] = currentTransaction;
-      write_index = (write_index + 1) % BUFFER_SIZE;
-
-      ret = disastrOS_semPost(producers_sem);
-      ERROR_HANDLER(ret, "Error posting producers_sem in producerJob");
-
-    i++;
-
-      ret = disastrOS_semPost(fill_sem);
-      ERROR_HANDLER(ret, "Error posting fill_sem in producerJob");
-
-    i++;
-  }
-
-  ret = disastrOS_semClose(empty_sem);
-  ERROR_HANDLER(ret, "Error closing empty_sem in producerJob");
-  ret = disastrOS_semClose(producers_sem);
-  ERROR_HANDLER(ret, "Error closing producers_sem in producerJob");
+// we need this to handle the sleep state
+void sleeperFunction(void* args){
+    printf("Hello, I am the sleeper, and I sleep %d\n",disastrOS_getpid());
+    while(1) {
+        getc(stdin);
+        disastrOS_printStatus();
+    }
 }
 
-/** Consumer **/
-void consumerJob(int consumer_no) {
-  printf("[*]@Consumer #%d\n", consumer_no);
-  int ret;
-  //int fill_sem = disastrOS_semOpen(FILL_SEM_ID, 0);
-  //ERROR_HANDLER(fill_sem, "Error opening fill_sem in consumerJob");
-  //int consumers_sem = disastrOS_semOpen(CONSUMERS_SEM_ID, 0);
-  //ERROR_HANDLER(consumers_sem, "Error opening consumers_sem in consumerJob");
-  int i = 0;
-  while (i < 100) {
-      ret = disastrOS_semWait(fill_sem);
-      ERROR_HANDLER(ret, "Error waiting fill_sem in consumerJob");
 
-      ret = disastrOS_semWait(consumers_sem);
-      ERROR_HANDLER(ret, "Error waiting consumers_sem in consumerJob");
+void prodFunction(void* args){
+    int i,ret;
 
-      // get the item and update read_index accordingly
-      int lastTransaction = transactions[read_index];
-      deposit += lastTransaction;
-      read_index = (read_index + 1) % BUFFER_SIZE;
+    printf("Sono il produttore con pid : %d\n",running->pid);
+    int sem_fill= disastrOS_semOpen(SEM_FILL, 0);                       //inizializzo il semaforo a 0, poichè sono stati prodotti 0 "token"
+    MESSAGE_ERROR(sem_fill < 0,"Errore nella semOpen di sem_fill del processp ");
 
-      ret = disastrOS_semPost(consumers_sem);
-      ERROR_HANDLER(ret, "Error posting consumers_sem in consumerJob");
+    int sem_empty = disastrOS_semOpen(SEM_EMPTY, BUFFER_SIZE);          //inizializzo il semaforo a BUFFER_SIZE, poichè ho ancora tutto lo spazio a disposizione
+    MESSAGE_ERROR(sem_empty < 0,"Errore nella semOpen di sem_empty del processo ");
 
-      ret = disastrOS_semPost(empty_sem);
-      ERROR_HANDLER(ret, "Error posting empty_sem in consumerJob");
+    int sem_prod = disastrOS_semOpen(SEM_PROD, 1);                      //semaforo che gestisce le operazioni tra i processi Produttori
+    MESSAGE_ERROR(sem_prod < 0,"Errore nella semOpen di sem_prod del processo ");
 
-      if (read_index % 10 == 0) {
-          printf("After the last 10 transactions balance is now %d.\n", deposit);
-      }
-      i++;
-    // disastrOS_sleep(1);
-  }
+    ListHead semaphores_used = semaphores_list;
+    Semaphore* sem_e = SemaphoreList_byId(&semaphores_used,sem_empty);
+    Semaphore* sem_f = SemaphoreList_byId(&semaphores_used,sem_fill);
 
-  ret = disastrOS_semClose(fill_sem);
-  ERROR_HANDLER(ret, "Error closing fill_sem in consumerJob");
-  ret = disastrOS_semClose(consumers_sem);
-  ERROR_HANDLER(ret, "Error closing consumers_sem in consumerJob");
+    for(i = 0;i < CYCLES;i++){
+        printf("\n\n+++++\n+++++\n+++++\nPid: %d\nsem_empty: %d\nsem_fill: %d\n+++++\n+++++\n+++++\n\n",running->pid, sem_e->count, sem_f->count);
+        ret = disastrOS_semWait(sem_empty);                             //devo aspettare che sem_empty abbia almeno uno spazio per poter inserire il "token"
+        MESSAGE_ERROR(ret != 0, "Errore nella semWait di sem_empty del processo ");
+        ret = disastrOS_semWait(sem_prod);                              //devo aspettare che sia il mio turno tra tutti i Produttori
+        MESSAGE_ERROR(ret != 0, "Errore nella semWait di sem_prod del processo ");
+
+        op[write_index] = running->pid;                       //produco il "token"
+        write_index = (write_index + 1) % BUFFER_SIZE;
+
+        ret = disastrOS_semPost(sem_prod);                              //comunico agli altri sem. Produttori che ho finito
+        MESSAGE_ERROR(ret != 0, "Errore nella semPost di sem_prod del processo ");
+
+        ret = disastrOS_semPost(sem_fill);                              //incremento sem_fill poichè ho inserito un "token"
+        MESSAGE_ERROR(ret != 0, "Errore nella semPost di sem_fill del processo ");
+    }
+
+    ret = disastrOS_semClose(sem_fill);
+    MESSAGE_ERROR(ret != 0, "Errore nella semClose di sem_fill del processo ");
+
+    ret = disastrOS_semClose(sem_empty);
+    MESSAGE_ERROR(ret != 0, "Errore nella semClose di sem_empty del processo ");
+
+    ret = disastrOS_semClose(sem_prod);
+    MESSAGE_ERROR(ret != 0, "Errore nella semClose di sem_prod del processo");
+
+    disastrOS_exit(disastrOS_getpid()+1);
 }
 
-void childFunction(void* args){
-  disastrOS_printStatus();
-  Child_Args_t *child_args_t = (Child_Args_t*) args;
-  if (child_args_t->sem_id  == PRODUCERS_SEM_ID) {
-    producerJob(child_args_t->number);
-    printf("[-]@Child Producer #%d finished working\n", child_args_t->number);
-  }
-  else if (child_args_t->sem_id == CONSUMERS_SEM_ID) {
-    consumerJob(child_args_t->number);
-    printf("[-]@Child Consumer #%d finished working\n", child_args_t->number);
-  }
+void consFunction(void* args){
+    int i,ret;
 
-  disastrOS_exit(disastrOS_getpid()+1);
+    printf("Sono il consumatore con pid : %d\n",running->pid);
+
+    int sem_fill= disastrOS_semOpen(SEM_FILL, 0);
+    MESSAGE_ERROR(sem_fill < 0,"Errore nella semOpen di sem_fill del processo ");
+
+    int sem_empty = disastrOS_semOpen(SEM_EMPTY, BUFFER_SIZE);
+    MESSAGE_ERROR(sem_empty < 0,"Errore nella semOpen di sem_empty del processo ");
+
+    int sem_cons = disastrOS_semOpen(SEM_CONS, 1);
+    MESSAGE_ERROR( sem_cons < 0,"Errore nella semOpen di sem_cons del processo ");
+
+    ListHead semaphores_used = semaphores_list;
+    Semaphore* sem_e = SemaphoreList_byId(&semaphores_used,sem_empty);
+    Semaphore* sem_f = SemaphoreList_byId(&semaphores_used,sem_fill);
+
+    for(i = 0;i < CYCLES;i++){
+        printf("\n\n+++++\n+++++\n+++++\nPid: %d\nsem_empty: %d\nsem_fill: %d\n+++++\n+++++\n+++++\n\n",running->pid, sem_e->count, sem_f->count);
+        ret = disastrOS_semWait(sem_fill);                                            //aspetto finchè sem_fill non contenga almeno un "token" prodotto
+        MESSAGE_ERROR(ret != 0, "Errore nella semWait di sem_fill del processo ");
+
+        ret = disastrOS_semWait(sem_cons);                                            //semaforo che regola le operazioni dei Consumatori
+        MESSAGE_ERROR(ret != 0, "Errore nella semWait di sem_cons del processo ");
+
+        int new_op = op[read_index];
+        read_index = (read_index + 1) % BUFFER_SIZE;
+        sum += new_op;
+        if (read_index % N == 0) {
+            printf("La somma totale delle operazioni è: %d.\n", sum);
+        }
+
+        ret = disastrOS_semPost(sem_cons);                                            //comunico agli altri Consumatori che ho finito
+        MESSAGE_ERROR(ret != 0, "Errore nella semPost di sem_cons del processo ");
+
+        ret = disastrOS_semPost(sem_empty);                                           //incremento sem_empty poichè ho liberato uno spazio
+        MESSAGE_ERROR(ret != 0, "Errore nella semPost di sem_empty del processo ");
+    }
+
+    ret = disastrOS_semClose(sem_fill);
+    MESSAGE_ERROR(ret != 0, "Errore nella semClose di sem_fill del processo ");
+
+    ret = disastrOS_semClose(sem_empty);
+    MESSAGE_ERROR(ret != 0, "Errore nella semClose di sem_empty del processo ");
+
+    ret = disastrOS_semClose(sem_cons);
+    MESSAGE_ERROR(ret != 0, "Errore nella semClose di sem_cons del processo ");
+
+    disastrOS_exit(disastrOS_getpid()+1);
 }
 
 
 void initFunction(void* args) {
-  int ret;
-  disastrOS_printStatus();
+    disastrOS_printStatus();
+    printf("Sono nel processo init con pid=%d\n",running->pid);
+    disastrOS_spawn(sleeperFunction, 0);
 
-  printf("[+]@Init Creating semaphores ... \n");
-  // Creating empty and fill semaphores
-  empty_sem = disastrOS_semOpen(EMPTY_SEM_ID, BUFFER_SIZE);
-  ERROR_HANDLER(empty_sem, "Error opening empty_sem");
-  // Reopening the same sempahore just for error testing purposes
-  // empty_sem = disastrOS_openSemaphore(EMPTY_SEM_ID, DSOS_CREATE);
-  // ERROR_HANDLER(empty_sem, "Error opening empty_sem");
-  fill_sem = disastrOS_semOpen(FILL_SEM_ID, 0);
-  ERROR_HANDLER(empty_sem, "Error opening fill_sem");
+    write_index=read_index=0;               //inizializzo write index e read_index
 
-  // Creating producers/consumers mutex semaphores
-  producers_sem = disastrOS_semOpen(PRODUCERS_SEM_ID, 1);
-  ERROR_HANDLER(empty_sem, "Error opening producers_sem");
-  consumers_sem = disastrOS_semOpen(CONSUMERS_SEM_ID, 1);
-  ERROR_HANDLER(empty_sem, "Error opening consumers_sem");
-  disastrOS_printStatus();
+    int children=0;
+    int i;
+    int fd[N];
 
-  printf("[*]@Init Starting transactions with %d consumers and %d producers\n", CONSUMERS_NUM, PRODUCERS_NUM);
+    for (i=0; i<N/2; ++i) {
+        int type=0;
+        int mode=DSOS_CREATE;
+        printf("mode: %d\n", mode);
+        printf("opening resource\n");
+        fd[i]=disastrOS_openResource(i,type,mode);
+        printf("fd=%d\n", fd[i]);
+        disastrOS_spawn(prodFunction, 0);
+        children++;
+    }
 
-  int alive_children=0;
+    for (; i<N; ++i) {
+        int type=0;
+        int mode=DSOS_CREATE;
+        printf("mode: %d\n", mode);
+        printf("opening resource\n");
+        fd[i]=disastrOS_openResource(i,type,mode);
+        printf("fd=%d\n", fd[i]);
+        disastrOS_spawn(consFunction, 0);
+        children++;
+    }
+    int retval;
+    int pid;
+    while(children>0 && (pid=disastrOS_wait(0, &retval))>=0){
+        printf("initFunction, child: %d terminated, retval:%d, alive: %d \n",
+         pid, retval, children);
+        --children;
+    }
+    for (i=0; i<N; ++i) {
+        printf("closing resource %d\n",fd[i]);
+        disastrOS_closeResource(fd[i]);
+        disastrOS_destroyResource(i);
+    }
 
-  Child_Args_t producers_args[PRODUCERS_NUM];
-  Child_Args_t consumers_args[CONSUMERS_NUM];
-
-  for (int i = 0; i<PRODUCERS_NUM; ++i) {
-    producers_args[i].sem_id = PRODUCERS_SEM_ID;
-    producers_args[i].number = i;
-    disastrOS_spawn(childFunction, &producers_args[i]);
-    alive_children++;
-  }
-  for (int i = 0; i<CONSUMERS_NUM; ++i) {
-    consumers_args[i].sem_id = CONSUMERS_SEM_ID;
-    consumers_args[i].number = i;
-    disastrOS_spawn(childFunction, &consumers_args[i]);
-     alive_children++;
-  }
-
-  disastrOS_printStatus();
-  int retval;
-  int pid;
-  while(alive_children>0 && (pid=disastrOS_wait(0, &retval))>=0){
-    // disastrOS_printStatus();
-    printf("[-]@Init child: %d terminated, retval:%d, alive: %d \n",
-	   pid, retval, alive_children);
-    --alive_children;
-  }
-
-  printf("[-] Removing semaphores\n");
-  ret = disastrOS_semClose(empty_sem);
-  ERROR_HANDLER(ret, "Error closing empty_sem");
-  ret = disastrOS_semClose(fill_sem);
-  ERROR_HANDLER(ret, "Error closing fill_sem");
-  ret = disastrOS_semClose(producers_sem);
-  ERROR_HANDLER(ret, "Error closing producers_sem");
-  ret = disastrOS_semClose(consumers_sem);
-  ERROR_HANDLER(ret, "Error closing consumers_sem");
-
-  disastrOS_printStatus();
-
-  printf("Shutdown!\n");
-  disastrOS_shutdown();
+    printf("SHUTDOWN!\n");
+    disastrOS_shutdown();
 }
 
 int main(int argc, char** argv){
-  char* logfilename=0;
-  if (argc>1) {
+    char* logfilename=0;
+    if (argc>1) {
     logfilename=argv[1];
-  }
-  write_index = 0;
-  read_index = 0;
-  // we create the init process processes
-  // the first is in the running variable
-  // the others are in the ready queue
-  printf("the function pointer is: %p\n", childFunction);
-  // spawn an init process
-  printf("start\n");
-  disastrOS_start(initFunction, 0, logfilename);
-  return 0;
+    }
+    // we create the init process processes
+    // the first is in the running variable
+    // the others are in the ready queue
+    // spawn an init process
+
+    printf("START\n");
+    disastrOS_start(initFunction, 0, logfilename);
+    return 0;
 }
