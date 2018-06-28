@@ -39,8 +39,8 @@ OBJS=pool_allocator.o\
      disastrOS_semopen.o\
      disastrOS_semclose.o\
      disastrOS_semwait.o\
-     fixed_size_message_queue.o\
-     disastrOS_sempost.o
+     disastrOS_sempost.o\
+     fixed_size_message_queue.o
 
 
 LIBS=libdisastrOS.a

@@ -1,6 +1,7 @@
 #pragma once
-#include <pthread.h>
-#include <semaphore.h>
+
+#include "disastrOS.h"
+#include "disastrOS_constants.h"
 
 typedef struct FixedSizeMessageQueue{
   char** messages;
@@ -9,9 +10,9 @@ typedef struct FixedSizeMessageQueue{
   int front_idx;
   int sem_full;
   int sem_empty;
-  int sem_p;
-  int sem_c;
-  pthread_mutex_t mutex;
+  int sem_prod;
+  int sem_cons;
+
 } FixedSizeMessageQueue;
 
 void FixedSizeMessageQueue_init(FixedSizeMessageQueue* q,

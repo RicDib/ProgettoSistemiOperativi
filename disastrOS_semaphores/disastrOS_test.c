@@ -1,66 +1,38 @@
-#include <unistd.h>
-#include <poll.h>
+#include <stdio.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <poll.h>
 #include <string.h>
-
-#include "fixed_size_message_queue.h"
 #include "disastrOS.h"
 #include "disastrOS_constants.h"
-
+#include "fixed_size_message_queue.h"
 
 #define CICLES 5
 
+FixedSizeMessageQueue* mq;
 
-volatile int num_consumers_alive=0;
-volatile int num_producers_alive=0;
 
-FixedSizeMessageQueue* queue;
+void produce(FixedSizeMessageQueue* q){
+    for (int i = 0; i < CICLES; i++){
 
-void* produce(){
 
-  ++num_producers_alive;
-  printf("INFO, PRODUCER %d START\n", disastrOS_getpid());
 
-  for (int i=0; i<CICLES; ++i) {
-    char buf[1024];
-    sprintf(buf, "msg from %d, cycle: %d", disastrOS_getpid(),i);
-    int length=strlen(buf);
-    char* msg=(char*)malloc(length);
-    strcpy(msg, buf);
-
-    printf("INFO, PRODUCER  %d sending [%s] \n", disastrOS_getpid(),msg);
-
-    FixedSizeMessageQueue_pushBack(queue, msg);
-
-  }
-
-  printf("INFO, PRODUCER %d END\n", disastrOS_getpid());
-  --num_producers_alive;
-  return 0;
+        char buf[1024];
+        int length=strlen(buf);
+        char* msg=(char*)malloc(length);
+        strcpy(msg, buf);
+        FixedSizeMessageQueue_pushBack(q, msg);
+    }
 }
 
-void* consume(){
+void consume(FixedSizeMessageQueue* q){
+    for (int i = 0; i < CICLES; i++){
 
+        FixedSizeMessageQueue_popFront(q);
 
-
-    ++num_consumers_alive;
-
-    printf("INFO, CONSUMER %d START\n", disastrOS_getpid());
-        for (int i=0; CICLES; ++i) {
-      printf("INFO, CONSUMER  %d waiting\n", disastrOS_getpid());
-      char* msg=FixedSizeMessageQueue_popFront(queue);
-      printf("INFO, CONSUMER  %d receiving [%s] \n", disastrOS_getpid(),msg);
-
-  }
-  printf("INFO, CONSUMER %d END\n", disastrOS_getpid());
-  --num_consumers_alive;
-  return 0;
-
+    }
 }
-
-
 
 
 // we need this to handle the sleep state
@@ -73,8 +45,6 @@ void sleeperFunction(void* args){
 }
 
 
-
-
 void childFunction(void* args){
   printf("Hello, I am the child function %d\n", disastrOS_getpid());
   printf("I will iterate a bit, before terminating\n");
@@ -83,65 +53,25 @@ void childFunction(void* args){
   int fd=disastrOS_openResource(disastrOS_getpid(), type, mode);
   printf("fd=%d\n", fd);
 
-
-
-
   printf("                                    \n\nWait...\n\n\n");
   disastrOS_sleep(15);
-  printf("      THE 3rd PROCESS PRODUCES THE RESOURCE, THE 4th CONSUMES IT\n");
 
 
-  if (disastrOS_getpid() == 0) {
 
-      produce();
-  }
-  if (disastrOS_getpid() == 1) {
 
-      produce();
-  }
-  if (disastrOS_getpid() == 2) {
-
-      produce();
-  }
-  if (disastrOS_getpid() == 3) {
-
-      produce();
-  }
-  if (disastrOS_getpid() == 4) {
-
-      produce();
-  }
-  if (disastrOS_getpid() == 5) {
-
-      produce();
+  if (disastrOS_getpid() <10) {
+    produce(mq);
   }
 
-
-  if (disastrOS_getpid() == 6) {
-
-      consume();
+  if (disastrOS_getpid() >10 && disastrOS_getpid() < 20){
+    consume(mq);
   }
-  if (disastrOS_getpid() == 7) {
-
-      consume();
-  }
-  if (disastrOS_getpid() == 8) {
-
-      consume();
-  }
-  if (disastrOS_getpid() == 9) {
-
-      consume();
-  }
-  if (disastrOS_getpid() == 10) {
-
-      consume();
-  }
-
-
 
 
   printf("PID: %d, terminating\n", disastrOS_getpid());
+
+
+
   disastrOS_exit(disastrOS_getpid()+1);
 }
 
@@ -150,21 +80,30 @@ void initFunction(void* args) {
   disastrOS_printStatus();
   printf("hello, I am init and I just started\n");
   disastrOS_spawn(sleeperFunction, 0);
-  printf("I feel like to spawn 10 nice threads\n");
+  printf("I feel like to spawn  nice threads\n");
   int alive_children=0;
 
-  for (int i=0; i<11; ++i) {
+
+  int queue_size=10;
+
+  printf("dfgq\n");
+
+
+  FixedSizeMessageQueue_init(mq, queue_size);
+
+  printf("dfgq\n");
+
+  for (int i=0; i<20; ++i) {
     int type=0;
     int mode=DSOS_CREATE;
     printf("mode: %d\n", mode);
     printf("opening resource (and creating if necessary)\n");
     int fd=disastrOS_openResource(i,type,mode);
-
-
     printf("fd=%d\n", fd);
     disastrOS_spawn(childFunction, 0);
     alive_children++;
   }
+
 
   disastrOS_printStatus();
   int retval;
@@ -181,12 +120,6 @@ void initFunction(void* args) {
 }
 
 int main(int argc, char** argv){
-
-  FixedSizeMessageQueue queue;
-  int queue_size=5;
-  FixedSizeMessageQueue_init(&queue, queue_size);
-
-
   char* logfilename=0;
   if (argc>1) {
     logfilename=argv[1];
@@ -200,4 +133,3 @@ int main(int argc, char** argv){
   disastrOS_start(initFunction, 0, logfilename);
   return 0;
 }
-
