@@ -44,8 +44,6 @@ void* produce(){
 
 void* consume(){
 
-
-
     ++num_consumers_alive;
 
     printf("INFO, CONSUMER %d START\n", disastrOS_getpid());
@@ -90,6 +88,8 @@ void childFunction(void* args){
 
   printf("                                    \n\nWait...\n\n\n");
   disastrOS_sleep(15);
+
+
 
   if (disastrOS_getpid() == 2) {
 
@@ -138,9 +138,6 @@ void childFunction(void* args){
       consume();
   }
 
-
-
-
   printf("PID: %d, terminating\n", disastrOS_getpid());
   disastrOS_exit(disastrOS_getpid()+1);
 }
@@ -186,9 +183,6 @@ void initFunction(void* args) {
 }
 
 int main(int argc, char** argv){
-
-
-
 
   char* logfilename=0;
   if (argc>1) {

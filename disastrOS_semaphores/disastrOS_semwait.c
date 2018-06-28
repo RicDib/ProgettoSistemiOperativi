@@ -11,6 +11,7 @@
 
 
 void internal_semWait(){
+
   //we take from syscall_args the semaphore
 	int sem_fd = running->syscall_args[0];
   // we take sem_des from the SemDescriptor list
@@ -21,7 +22,7 @@ void internal_semWait(){
 		return;
 	}
 
-  //we take the pointer from the previous SemDescriptor 
+  //we take the pointer from the previous SemDescriptor
 	SemDescriptorPtr* descptr = sem_des->ptr;
 	if(!descptr){
 		running->syscall_retvalue = DSOS_ESEMAPHOREDESC;
@@ -36,7 +37,7 @@ void internal_semWait(){
 		return;
 	}
 
-  
+
 	PCB* p;
 
   // we decrease semcount

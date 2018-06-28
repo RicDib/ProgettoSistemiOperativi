@@ -9,14 +9,12 @@ void FixedSizeMessageQueue_init(FixedSizeMessageQueue* q,
 				int size_max){
 
 
-  printf("qwertyu\n");
-
   q->messages = (char**)malloc(size_max*sizeof(char*));
 
-  printf("poiuyt\n");
   q->size=0;
   q->front_idx=0;
   q->size_max=size_max;
+
 
   q->sem_full = disastrOS_semOpen(1, 0);
   q->sem_empty = disastrOS_semOpen(2,q->size_max);
@@ -30,7 +28,6 @@ void FixedSizeMessageQueue_pushBack(FixedSizeMessageQueue*q,
 
   disastrOS_semWait(q->sem_empty);
   disastrOS_semWait(q->sem_prod);
-
 
   int tail_idx=(q->front_idx+q->size)%q->size_max;
   q->messages[tail_idx]=message;
