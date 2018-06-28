@@ -40,10 +40,11 @@ int deposit;
 void producerJob(int producer_no) {
   printf("[*]@Producer #%d\n", producer_no);
   int ret;
-  int empty_sem = disastrOS_semOpen(EMPTY_SEM_ID, 0);
-  ERROR_HANDLER(empty_sem, "Error opening empty_sem in producerJob");
-  int producers_sem = disastrOS_semOpen(PRODUCERS_SEM_ID, 0);
-  ERROR_HANDLER(producers_sem, "Error opening producers_sem in producerJob");
+
+  //int empty_sem = disastrOS_semOpen(EMPTY_SEM_ID, 0);
+  //ERROR_HANDLER(empty_sem, "Error opening empty_sem in producerJob");
+  //int producers_sem = disastrOS_semOpen(PRODUCERS_SEM_ID, 0);
+  //ERROR_HANDLER(producers_sem, "Error opening producers_sem in producerJob");
   int i = 0;
   while (i < TRANSACTIONS_NUMBER) {
       // produce the item
@@ -79,10 +80,10 @@ void producerJob(int producer_no) {
 void consumerJob(int consumer_no) {
   printf("[*]@Consumer #%d\n", consumer_no);
   int ret;
-  int fill_sem = disastrOS_semOpen(FILL_SEM_ID, 0);
-  ERROR_HANDLER(fill_sem, "Error opening fill_sem in consumerJob");
-  int consumers_sem = disastrOS_semOpen(CONSUMERS_SEM_ID, 0);
-  ERROR_HANDLER(consumers_sem, "Error opening consumers_sem in consumerJob");
+  //int fill_sem = disastrOS_semOpen(FILL_SEM_ID, 0);
+  //ERROR_HANDLER(fill_sem, "Error opening fill_sem in consumerJob");
+  //int consumers_sem = disastrOS_semOpen(CONSUMERS_SEM_ID, 0);
+  //ERROR_HANDLER(consumers_sem, "Error opening consumers_sem in consumerJob");
   int i = 0;
   while (i < 100) {
       ret = disastrOS_semWait(fill_sem);
