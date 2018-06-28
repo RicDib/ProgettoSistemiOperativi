@@ -57,7 +57,7 @@ void prodFunction(void* args){
     Semaphore* sem_f = SemaphoreList_byId(&semaphores_used,sem_fill);
 
     for(i = 0;i < CYCLES;i++){
-        printf("\n\n+++++\n+++++\n+++++\nPid: %d\nsem_empty: %d\nsem_fill: %d\n+++++\n+++++\n+++++\n\n",running->pid, sem_e->count, sem_f->count);
+        printf("\n\nPid: %d\nsem_empty: %d\nsem_fill: %d\n\n",running->pid, sem_e->count, sem_f->count);
         ret = disastrOS_semWait(sem_empty);                             //devo aspettare che sem_empty abbia almeno uno spazio per poter inserire il "token"
         MESSAGE_ERROR(ret != 0, "Errore nella semWait di sem_empty del processo ");
         ret = disastrOS_semWait(sem_prod);                              //devo aspettare che sia il mio turno tra tutti i Produttori
@@ -65,6 +65,7 @@ void prodFunction(void* args){
 
         op[write_index] = running->pid;                       //produco il "token"
         write_index = (write_index + 1) % BUFFER_SIZE;
+        printf("PRODUCED\n");
 
         ret = disastrOS_semPost(sem_prod);                              //comunico agli altri sem. Produttori che ho finito
         MESSAGE_ERROR(ret != 0, "Errore nella semPost di sem_prod del processo ");
@@ -104,7 +105,7 @@ void consFunction(void* args){
     Semaphore* sem_f = SemaphoreList_byId(&semaphores_used,sem_fill);
 
     for(i = 0;i < CYCLES;i++){
-        printf("\n\n+++++\n+++++\n+++++\nPid: %d\nsem_empty: %d\nsem_fill: %d\n+++++\n+++++\n+++++\n\n",running->pid, sem_e->count, sem_f->count);
+        printf("\n\nPid: %d\nsem_empty: %d\nsem_fill: %d\n\n",running->pid, sem_e->count, sem_f->count);
         ret = disastrOS_semWait(sem_fill);                                            //aspetto finchè sem_fill non contenga almeno un "token" prodotto
         MESSAGE_ERROR(ret != 0, "Errore nella semWait di sem_fill del processo ");
 
@@ -114,9 +115,10 @@ void consFunction(void* args){
         int new_op = op[read_index];
         read_index = (read_index + 1) % BUFFER_SIZE;
         sum += new_op;
-        if (read_index % N == 0) {
+        printf("CONSUMED\n");
+       /* if (read_index % N == 0) {
             printf("La somma totale delle operazioni è: %d.\n", sum);
-        }
+        }*/
 
         ret = disastrOS_semPost(sem_cons);                                            //comunico agli altri Consumatori che ho finito
         MESSAGE_ERROR(ret != 0, "Errore nella semPost di sem_cons del processo ");
@@ -173,8 +175,8 @@ void initFunction(void* args) {
     int retval;
     int pid;
     while(children>0 && (pid=disastrOS_wait(0, &retval))>=0){
-        printf("initFunction, child: %d terminated, retval:%d, alive: %d \n",
-         pid, retval, children);
+       // printf("initFunction, child: %d terminated, retval:%d, alive: %d \n",
+       //  pid, retval, children);
         --children;
     }
     for (i=0; i<N; ++i) {
